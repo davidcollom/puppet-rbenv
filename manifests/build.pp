@@ -44,6 +44,7 @@
 # Justin Downing <justin@downing.us>
 #
 define rbenv::build (
+  $ensure      = 'present',
   $install_dir = $rbenv::install_dir,
   $owner       = $rbenv::owner,
   $group       = $rbenv::group,
@@ -51,6 +52,13 @@ define rbenv::build (
   $cflags      = '-O3 -march=native',
 ) {
   require rbenv
+  
+  if $ensure != 'present' {
+    file{"${install_dir}/versions/${title}":
+      ensure  => $ensure
+    }
+  }
+  
 
   $environment_for_build = $cflags ? {
     'none'  => ["RBENV_ROOT=${install_dir}"],
@@ -84,7 +92,7 @@ define rbenv::build (
   exec { "bundler-install-${title}":
     command     => 'gem install bundler',
     environment => ["RBENV_VERSION=${title}"],
-    refreshonly => true,
+    creates     => "${install_dir}/versions/${title}/bin/bundle"
   }~>
   exec { "rbenv-rehash-${title}":
     command     => 'rbenv rehash',

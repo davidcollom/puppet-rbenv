@@ -33,6 +33,7 @@
 # Justin Downing <justin@downing.us>
 #
 define rbenv::plugin(
+  $ensure      = 'present',
   $install_dir = $rbenv::install_dir,
   $owner       = $rbenv::owner,
   $group       = $rbenv::group,
@@ -41,18 +42,31 @@ define rbenv::plugin(
 
   $plugin = split($name, '/') # divide plugin name into array
 
-  exec { "install-${name}":
-    command => "git clone https://github.com/${plugin[0]}/${plugin[1]}",
-    path    => [ '/usr/bin' ],
-    cwd     => "${install_dir}/plugins",
-    onlyif  => "test -d ${install_dir}/plugins",
-    unless  => "test -d ${install_dir}/plugins/${plugin[1]}",
-  }~>
-  exec { "rbenv-permissions-${name}":
-    command     => "chown -R ${owner}:${group} ${install_dir} && \
-                    chmod -R g+w ${install_dir}",
-    path        => [ '/bin' ],
-    refreshonly => true,
+  if member(['present','installed'], $ensure)
+  {
+    
+	  exec { "install-${name}":
+	    command => "git clone https://github.com/${plugin[0]}/${plugin[1]}",
+	    path    => [ '/usr/bin' ],
+	    cwd     => "${install_dir}/plugins",
+	    onlyif  => "test -d ${install_dir}/plugins",
+	    unless  => "test -d ${install_dir}/plugins/${plugin[1]}",
+	  }~>
+	  exec { "rbenv-permissions-${name}":
+	    command     => "chown -R ${owner}:${group} ${install_dir} && \
+	                    chmod -R g+w ${install_dir}",
+	    path        => [ '/bin' ],
+	    refreshonly => true,
+	  }
+	  
+  }else{
+    
+    exec{"uninstall-${name}":
+      command =>  "rm -rf ${install_dir}/plugins/${plugin[1]}",
+#      path    =>  ['/usr/bin', '/bin'],
+      cwd     =>  "${install_dir}/plugins",
+      onlyif  => "test -d ${install_dir}/plugins/${plugin[1]}",
+    }
   }
 
 }
