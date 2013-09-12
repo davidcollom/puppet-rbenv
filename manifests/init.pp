@@ -80,7 +80,23 @@ class rbenv (
     content   => template('rbenv/rbenv.sh'),
     mode      => '0775'
   }
+  
+  file_line { 'bash.bashrc':
+    path => '/etc/bash.bashrc',
+    line => "source /etc/profile.d/rbenv.sh",
+  }
 
-  Exec['git-clone-rbenv'] -> File[$install_dir]
+  Exec['git-clone-rbenv'] -> File[$install_dir] -> File_line['bash.bashrc']
 
+  
+  if defined(Class['apache']) {
+    Exec['git-clone-rbenv'] -> Class['apache']
+  }elsif defined(Class['nginx']){
+    Exec['git-clone-rbenv'] -> Class['nginx']
+  }
+  if defined(Class['passenger']){
+    File['/etc/profile.d/rbenv.sh'] -> Class['passenger']
+    
+  }
+  
 }
